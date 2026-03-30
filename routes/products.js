@@ -47,9 +47,11 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ success: false, message: "Payload cannot be empty" });
         }
 
-        // 1. Create the product
+        // 1. Create the product based on your schema
         const newProduct = await Product.create(req.body);
-        const { title, price, desc, img } = newProduct;
+
+        // Destructure fields from the newly created product
+        const { title, desc, primaryimage, fromprice, toprice, technologies, weblink } = newProduct;
 
         // 2. Get all UNIQUE customer emails from past bookings
         const uniqueEmails = await Book.distinct("email");
@@ -57,47 +59,58 @@ router.post("/", async (req, res) => {
         // 3. Send emails to each unique customer
         if (uniqueEmails.length > 0) {
             try {
-                // Using Promise.all to send them efficiently
+                const techList = technologies.join(", "); // Format technologies for the email
+
                 await Promise.all(uniqueEmails.map(custEmail =>
                     sendBrevoEmail({
                         email: custEmail,
                         subject: `🔥 New Arrival: ${title} is now available!`,
+                        // Text version to prevent Brevo 400 error
+                        text: `New Product Alert: ${title}. Price range: ${fromprice} XAF - ${toprice} XAF. Check it out at ${weblink}`,
                         html: `
-                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 15px; overflow: hidden;">
-                                <div style="background-color: #000; padding: 20px; text-align: center;">
-                                    <h1 style="color: #fff; margin: 0;">New Product Alert</h1>
+                            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; color: #1e293b;">
+                                <div style="background-color: #0f172a; padding: 30px; text-align: center;">
+                                    <h1 style="color: #ffffff; margin: 0; font-size: 24px;">New Product Alert</h1>
                                 </div>
-                                <div style="padding: 20px;">
-                                    <img src="${img}" alt="${title}" style="width: 100%; border-radius: 10px; margin-bottom: 20px;" />
-                                    <h2 style="color: #333;">${title}</h2>
-                                    <p style="font-size: 18px; font-weight: bold; color: #1a73e8;">Price: ${newProduct.fromprice} XAF- ${newProduct?.toprice} XAF</p>
-                                    <p style="color: #666; line-height: 1.6;">${desc}</p>
-                                    <div style="text-align: center; margin-top: 30px;">
-                                        <a href="https://vildashprice.vizit.homes/services" 
-                                           style="background-color: #1a73e8; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                                            View Product Now
+                                
+                                <div style="padding: 24px;">
+                                    <img src="${primaryimage}" alt="${title}" style="width: 100%; height: auto; border-radius: 12px; margin-bottom: 20px; object-fit: cover;" />
+                                    
+                                    <h2 style="color: #0f172a; margin-top: 0;">${title}</h2>
+                                    
+                                    <div style="background-color: #f1f5f9; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
+                                        <p style="margin: 0; font-size: 14px; color: #64748b; font-weight: 600; text-transform: uppercase;">Estimated Pricing</p>
+                                        <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 800; color: #059669;">
+                                            ${fromprice} XAF — ${toprice} XAF
+                                        </p>
+                                    </div>
+
+                                    <p style="color: #475569; line-height: 1.6; font-size: 15px;">${desc}</p>
+                                    
+                                    <div style="margin: 20px 0;">
+                                        <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Built with:</p>
+                                        <p style="margin: 0; font-size: 14px; color: #334155;">${techList}</p>
+                                    </div>
+
+                                    <div style="text-align: center; margin-top: 35px;">
+                                        <a href="${weblink}" 
+                                           style="background-color: #2563eb; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block;">
+                                            View Project Details
                                         </a>
                                     </div>
                                 </div>
-                                <div style="background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #999;">
-                                    <p>You are receiving this because you have booked with us before.</p>
+                                
+                                <div style="background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
+                                    <p style="margin: 0;">You are receiving this because you have previously interacted with our services.</p>
                                 </div>
                             </div>
                         `
                     })
                 ));
-                console.log(`✅ Announcement sent to ${uniqueEmails.length} unique customers.`);
+                console.log(`✅ Announcement sent to ${uniqueEmails.length} customers.`);
             } catch (emailErr) {
-                // LOG BREVO SPECIFIC ERRORS
                 console.error("❌ BREVO NOTIFICATION ERROR:");
-                if (emailErr.response) {
-                    console.error("Data:", emailErr.response.data);
-                    console.error("Status:", emailErr.response.status);
-                } else {
-                    console.error("Message:", emailErr.message);
-                }
-                // We don't necessarily want to fail the whole request if the product saved 
-                // but the email failed, but we log it for you to see.
+                console.error(emailErr.response?.data || emailErr.message);
             }
         }
 
@@ -108,7 +121,6 @@ router.post("/", async (req, res) => {
         });
 
     } catch (error) {
-        // LOG GENERAL SERVER/DB ERRORS
         console.error("❌ CRITICAL SERVER ERROR:", error.message);
         res.status(500).json({
             success: false,
