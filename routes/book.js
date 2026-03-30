@@ -1,7 +1,7 @@
 import express from "express"
 import book from "../models/book.js"
 
-import { sendAdminNotification } from "./sendEmail.js";
+import { sendBrevoEmail } from "./sendEmail.js"
 
 const router = express.Router();
 
@@ -12,7 +12,7 @@ router.post("/", async (req, res) => {
         const newBook = new book({ name, email, productId, phone, service, budget, desc });
         await newBook.save();
 
-        await sendAdminNotification({
+        await sendBrevoEmail ({
             subject: `🚀 [New Booking] ${service} - ${name}`,
             html: `
             <div style="background-color: #f4f7f9; padding: 40px 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">

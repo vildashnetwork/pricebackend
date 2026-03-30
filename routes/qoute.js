@@ -1,7 +1,7 @@
 import qoute from "../models/Qoutes.js"
 import express from "express"
 
-import { sendAdminNotification } from "./sendEmail.js"
+import { sendBrevoEmail } from "./sendEmail.js"
 
 const router = express.Router()
 
@@ -50,7 +50,7 @@ router.post("/", async (req, res) => {
         await newqoute.save()
 
         // Trigger Professional Quote Notification
-        await sendAdminNotification({
+        await sendBrevoEmail({
             subject: `💎 [New Quote Request] ${company || name} - ${budget}`,
             html: `
             <div style="background-color: #f8fafc; padding: 40px 10px; font-family: 'Inter', -apple-system, sans-serif;">

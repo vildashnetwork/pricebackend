@@ -1,7 +1,7 @@
 import express from "express"
 import axios from "axios"
 import contact from "../models/Contact.js"
-import { sendAdminNotification } from "./sendEmail.js"
+import { sendBrevoEmail } from "./sendEmail.js"
 const router = express.Router()
 
 
@@ -18,7 +18,7 @@ router.post("/", async (req, res) => {
         await newcontact.save()
 
         // Trigger the professional admin email
-        await sendAdminNotification({
+        await sendBrevoEmail({
             subject: `✉️ [New Message] ${subject} - ${name}`,
             html: `
             <div style="background-color: #f0f2f5; padding: 40px 10px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
