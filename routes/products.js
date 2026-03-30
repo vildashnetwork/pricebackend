@@ -70,7 +70,7 @@ router.post("/", async (req, res) => {
                                 <div style="padding: 20px;">
                                     <img src="${img}" alt="${title}" style="width: 100%; border-radius: 10px; margin-bottom: 20px;" />
                                     <h2 style="color: #333;">${title}</h2>
-                                    <p style="font-size: 18px; font-weight: bold; color: #1a73e8;">Price: ${price}</p>
+                                    <p style="font-size: 18px; font-weight: bold; color: #1a73e8;">Price: ${newProduct.fromprice} XAF- ${newProduct?.toprice} XAF</p>
                                     <p style="color: #666; line-height: 1.6;">${desc}</p>
                                     <div style="text-align: center; margin-top: 30px;">
                                         <a href="https://vildashprice.vizit.homes/services" 
