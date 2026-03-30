@@ -52,44 +52,53 @@ router.post("/", async (req, res) => {
         const { title, price, desc, img } = newProduct;
 
         // 2. Get all UNIQUE customer emails from past bookings
-        // .distinct("email") returns an array of unique strings: ["user1@gmail.com", "user2@gmail.com"]
         const uniqueEmails = await Book.distinct("email");
 
         // 3. Send emails to each unique customer
         if (uniqueEmails.length > 0) {
-            // We use Promise.all to send them efficiently
-            await Promise.all(uniqueEmails.map(custEmail =>
-                sendBrevoEmail({
-                    email: custEmail,
-                    subject: `🔥 New Arrival: ${title} is now available!`,
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 15px; overflow: hidden;">
-                            <div style="background-color: #000; padding: 20px; text-align: center;">
-                                <h1 style="color: #fff; margin: 0;">New Product Alert</h1>
-                            </div>
-                            
-                            <div style="padding: 20px;">
-                                <img src="${img}" alt="${title}" style="width: 100%; border-radius: 10px; margin-bottom: 20px;" />
-                                <h2 style="color: #333;">${title}</h2>
-                                <p style="font-size: 18px; font-weight: bold; color: #1a73e8;">Price: ${price}</p>
-                                <p style="color: #666; line-height: 1.6;">${desc}</p>
-                                
-                                <div style="text-align: center; margin-top: 30px;">
-                                    <a href="https://vildashprice.vizit.homes/services" 
-                                       style="background-color: #1a73e8; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                                       View Product Now
-                                    </a>
+            try {
+                // Using Promise.all to send them efficiently
+                await Promise.all(uniqueEmails.map(custEmail =>
+                    sendBrevoEmail({
+                        email: custEmail,
+                        subject: `🔥 New Arrival: ${title} is now available!`,
+                        html: `
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 15px; overflow: hidden;">
+                                <div style="background-color: #000; padding: 20px; text-align: center;">
+                                    <h1 style="color: #fff; margin: 0;">New Product Alert</h1>
+                                </div>
+                                <div style="padding: 20px;">
+                                    <img src="${img}" alt="${title}" style="width: 100%; border-radius: 10px; margin-bottom: 20px;" />
+                                    <h2 style="color: #333;">${title}</h2>
+                                    <p style="font-size: 18px; font-weight: bold; color: #1a73e8;">Price: ${price}</p>
+                                    <p style="color: #666; line-height: 1.6;">${desc}</p>
+                                    <div style="text-align: center; margin-top: 30px;">
+                                        <a href="https://vildashprice.vizit.homes/services" 
+                                           style="background-color: #1a73e8; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                                            View Product Now
+                                        </a>
+                                    </div>
+                                </div>
+                                <div style="background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #999;">
+                                    <p>You are receiving this because you have booked with us before.</p>
                                 </div>
                             </div>
-                            
-                            <div style="background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #999;">
-                                <p>You are receiving this because you have booked with us before.</p>
-                            </div>
-                        </div>
-                    `
-                })
-            ));
-            console.log(`Announcement sent to ${uniqueEmails.length} unique customers.`);
+                        `
+                    })
+                ));
+                console.log(`✅ Announcement sent to ${uniqueEmails.length} unique customers.`);
+            } catch (emailErr) {
+                // LOG BREVO SPECIFIC ERRORS
+                console.error("❌ BREVO NOTIFICATION ERROR:");
+                if (emailErr.response) {
+                    console.error("Data:", emailErr.response.data);
+                    console.error("Status:", emailErr.response.status);
+                } else {
+                    console.error("Message:", emailErr.message);
+                }
+                // We don't necessarily want to fail the whole request if the product saved 
+                // but the email failed, but we log it for you to see.
+            }
         }
 
         res.status(201).json({
@@ -99,10 +108,20 @@ router.post("/", async (req, res) => {
         });
 
     } catch (error) {
-        console.error(`Error: ${error.message}`);
-        res.status(500).json({ success: false, message: "Internal server error" });
+        // LOG GENERAL SERVER/DB ERRORS
+        console.error("❌ CRITICAL SERVER ERROR:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
     }
 });
+
+
+
+
+
 // @desc    Get all products
 // @route   GET /all
 router.get("/all", async (req, res) => {
