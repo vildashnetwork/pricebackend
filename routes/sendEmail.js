@@ -1,9 +1,5 @@
 import axios from "axios";
 
-/**
- * Universal Email Utility
- * @param {Object} options - { email, name, subject, html, text }
- */
 export const sendBrevoEmail = async (options) => {
     try {
         const apiKey = process.env.BREVO_API_KEY;
@@ -16,8 +12,7 @@ export const sendBrevoEmail = async (options) => {
             },
             to: [
                 {
-                    // Use the email passed in options, or fallback to yours if none provided
-                    email: options.email || "liblissz3@gmail.com",
+                    email: options.email || "vildashnetwork02@gmail.com",
                     name: options.name || "User"
                 }
             ],
@@ -39,3 +34,6 @@ export const sendBrevoEmail = async (options) => {
         throw error;
     }
 };
+
+// Add this line at the bottom to support the old name!
+export const sendAdminNotification = sendBrevoEmail;
